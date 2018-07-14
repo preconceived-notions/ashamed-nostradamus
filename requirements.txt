@@ -2,3 +2,5 @@ apache-beam[gcp]==2.5.0
 tensorflow-probability-gpu == 0.0.1
 tensorflow-transform
 tensorflow-model-analysis
+jupyter
+jupyterlab
