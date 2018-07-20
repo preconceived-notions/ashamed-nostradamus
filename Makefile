@@ -7,31 +7,38 @@ IMAGE_NAME ?= ashamed-nostradamus
 CONTAINER_NAME ?= IMAGE_NAME
 CONTAINER_INSTANCE ?= d
 
-.PHONY: pipeline build push shell run test start stop reload rm clean release
+.PHONY: build push shell run test start stop reload rm clean release
 
+ifeq (, $(shell which nvidia-smi))
 build: Dockerfile
 	docker build -t $(NS)/$(IMAGE_NAME):$(VERSION) -f Dockerfile .
 
-buildgpu: Dockerfile.gpu
+run:  build
+	docker run --rm --name=$(CONTAINER_NAME)-$(CONTAINER_INSTANCE) -i -t $(PORTS) $(VOLUMES) $(ENV) $(NS)/$(IMAGE_NAME):$(VERSION)
+
+shell:
+	docker run --rm --name=$(CONTAINER_NAME)-$(CONTAINER_INSTANCE) -i -t $(PORTS) $(VOLUMES) $(ENV) $(NS)/$(IMAGE_NAME):$(VERSION) /bin/bash
+
+test: build
+	docker run --rm --name=$(CONTAINER_NAME)-$(CONTAINER_INSTANCE) -t -i $(PORTS) $(VOLUMES) $(ENV) $(NS)/$(IMAGE_NAME):$(VERSION) $(TEST)
+endif
+
+ifeq (/usr/bin/nvidia-smi, $(shell which nvidia-smi))
+build: Dockerfile.gpu
 	docker build -t $(NS)/$(IMAGE_NAME):$(VERSION) -f Dockerfile.gpu .
 
+run:  build
+	docker run --rm --runtime=nvidia --name=$(CONTAINER_NAME)-$(CONTAINER_INSTANCE) -i -t $(PORTS) $(VOLUMES) $(ENV) $(NS)/$(IMAGE_NAME):$(VERSION)
+
+shell:
+	docker run --rm --runtime=nvidia --name=$(CONTAINER_NAME)-$(CONTAINER_INSTANCE) -i -t $(PORTS) $(VOLUMES) $(ENV) $(NS)/$(IMAGE_NAME):$(VERSION) /bin/bash
+
+test: build
+	docker run --rm --runtime=nvidia --name=$(CONTAINER_NAME)-$(CONTAINER_INSTANCE) -t -i $(PORTS) $(VOLUMES) $(ENV) $(NS)/$(IMAGE_NAME):$(VERSION) $(TEST)
+endif
 
 push:
 	docker push $(NS)/$(IMAGE_NAME):$(VERSION)
-
-shell:
-	docker run --rm --runtime=nvidia --name=$(CONTAINER_NAME)-$(CONTAINER_INSTANCE) -i -t $(PORTS) $(VOLUMES) $(ENV) $(NS)/$(IMAGE_NAME)\:$(VERSION) /bin/bash
-
-run:
-	docker run --rm --runtime=nvidia --name=$(CONTAINER_NAME)-$(CONTAINER_INSTANCE) -i -t $(PORTS) $(VOLUMES) $(ENV) $(NS)/$(IMAGE_NAME):$(VERSION)
-
-
-runit:
-	docker run --rm --runtime=nvidia --name=$(CONTAINER_NAME)-$(CONTAINER_INSTANCE) -i -t $(PORTS) $(VOLUMES) $(ENV) --entrypoint=/bin/bash $(NS)/$(IMAGE_NAME):$(VERSION)
-
-test: build
-	docker run --rm--runtime=nvidia --name=$(CONTAINER_NAME)-$(CONTAINER_INSTANCE) -t -i $(PORTS) $(VOLUMES) $(ENV) $(NS)/$(IMAGE_NAME):$(VERSION) $(TEST)
-
 
 stop:
 	docker stop $(CONTAINER_NAME)-$(CONTAINER_INSTANCE)
@@ -47,7 +54,6 @@ clean:
 
 release: build
 	 make push -e VERSION=$(VERSION)
-
 
 default: build
 
