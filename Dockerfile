@@ -1,20 +1,10 @@
-FROM ubuntu:latest
+FROM tensorflow/tensorflow:1.7.0-gpu
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    build-essential \
-    git \
-    python \
-    python-pip \
-    python-setuptools
-
-RUN pip install tf-nightly
-
-
-# Checkout  at HEAD
-RUN git clone https://github.com/preconceived-notions/ashamed-nostradamus /ashamed-nostradamus
+RUN mkdir -p ashamed-nostradamus
 
 WORKDIR /ashamed-nostradamus
+
+ADD requirements.txt requirements.txt
 
 RUN pip install -r requirements.txt
 
