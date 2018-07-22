@@ -1,0 +1,8 @@
+#! /bin/bash
+
+jupyter nbextension enable --py widgetsnbextension
+jupyter nbextension install --py --symlink tensorflow_model_analysis
+jupyter nbextension enable --py tensorflow_model_analysis
+jupyter nbextension install /facets-dist/
+
+jupyter notebook --allow-root --NotebookApp.iopub_data_rate_limit=10000000
